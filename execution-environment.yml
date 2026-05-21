@@ -1,0 +1,27 @@
+# execution-environment.yml
+version: 3
+
+images:
+  base_image:
+    # Lightweight runner base for a purpose-built AWS SSM execution environment.
+    # This avoids rebuilding the full AWX EE image and installs only this repo's dependencies.
+    name: quay.io/ansible/ansible-runner:latest
+
+dependencies:
+  ansible_core:
+    # Pins the Ansible/Galaxy client used during the build so collection downloads
+    # do not depend on the older client bundled in the lightweight Python 3.8 base image.
+    package_pip: ansible-core==2.13.13
+  ansible_runner:
+    # Keeps the runtime runner explicit for AWX job execution.
+    package_pip: ansible-runner==2.3.6
+  galaxy: requirements.yml
+  python: requirements.txt
+  system: bindep.txt
+
+additional_build_steps:
+  append_final:
+    - RUN python3 -c "from urllib.request import urlretrieve; urlretrieve('https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm', '/tmp/session-manager-plugin.rpm')"
+    - RUN rpm -Uvh /tmp/session-manager-plugin.rpm && rm -f /tmp/session-manager-plugin.rpm
+    - RUN ln -sf /usr/local/sessionmanagerplugin/bin/session-manager-plugin /usr/local/bin/session-manager-plugin
+    - RUN session-manager-plugin --version

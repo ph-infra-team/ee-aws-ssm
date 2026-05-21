@@ -1,0 +1,54 @@
+############################################
+# AWX Execution Environment Pipeline
+# Repo: infra_team/automation/ee-aws-ssm
+#
+# Purpose:
+# - Consumes the centralized enterprise EE build pipeline.
+# - Builds an AWS SSM-capable AWX execution environment.
+# - Pushes the image to this project's GitLab Container Registry.
+# - Optionally registers or updates the EE in AWX.
+############################################
+
+include:
+  - project: infra_team/platform-pipelines
+    ref: main
+    file: ansible/ee.yml
+
+variables:
+  # Tags the built image with the exact Git commit SHA for traceability.
+  EE_IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
+
+  # Registers this image in AWX using a stable enterprise EE name.
+  AWX_EE_NAME: "ee-aws-ssm"
+
+  # Forces AWX to pull the current image when jobs run.
+  AWX_EE_PULL: "always"
+
+  # Enables the shared manual AWX registration job on protected version tags.
+  EE_REGISTER_IN_AWX: "true"
+
+  # Points the registration job at the internal AWX endpoint.
+  AWX_HOST: "http://awx.midhtech.local"
+
+  # Attaches the AWX container registry credential used by AWX/Receptor to pull
+  # this private GitLab registry image when job templates run.
+  AWX_EE_REGISTRY_CREDENTIAL_NAME: "gitlab-container-registry"
+
+  # Verifies this EE contains the AWS collections needed by AWX jobs.
+  EE_SMOKE_COLLECTIONS: "amazon.aws community.aws"
+
+  # Verifies this EE contains the SSM connection plugin used by inventories.
+  EE_SMOKE_CONNECTION_PLUGINS: "community.aws.aws_ssm"
+
+  # Verifies this EE contains the AWS Session Manager binary required by the
+  # SSM connection plugin at runtime.
+  EE_SMOKE_EXECUTABLES: "session-manager-plugin"
+
+  # Verifies this EE contains the AWS Python SDK libraries required by SSM.
+  EE_SMOKE_PYTHON_IMPORTS: "boto3 botocore"
+
+  # Uses the Python binary available inside this lightweight EE image.
+  EE_SMOKE_PYTHON_BIN: "python3"
+
+  # Secret values are intentionally not stored in this repo.
+  # Configure AWX_USERNAME and AWX_PASSWORD as masked/protected GitLab CI/CD variables.

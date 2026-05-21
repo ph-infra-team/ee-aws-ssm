@@ -1,0 +1,5 @@
+# bindep.txt
+#
+# This AWS SSM execution environment does not require additional RPM packages.
+# Keeping this file intentionally empty avoids dnf/yum calls during image builds,
+# which keeps the EE build deterministic and independent of public OS mirrors.
